@@ -15,9 +15,7 @@ development tooling uses `podman` for the building and management of the contain
 configuration in Podman, you will need to enable the socket service and point the `DOCKER_HOST` environment variable at
 it so that Snyk can communicate with Podman:
 
-
-On Linux
-with rootless Podman, start its Docker-compatible API socket and point Snyk at it before scanning:
+On Linux with rootless Podman, start its Docker-compatible API socket and point Snyk at it before scanning:
 
 ```sh
 $ systemctl --user start podman.socket
@@ -28,7 +26,7 @@ export DOCKER_HOST="unix://${XDG_RUNTIME_DIR}/podman/podman.sock"
 set -Ux DOCKER_HOST "unix://${XDG_RUNTIME_DIR}/podman/podman.sock"
 ```
 
-Run `task develop` to lint, build, and scan all container images.  Also run `task snyk` to perform a static analysis of
+Run `task develop` to lint, build, and scan all container images. Also run `task snyk` to perform a static analysis of
 any container images built. The Snyk scan uses each image's local `:testing` tag and fails when Snyk finds a
 vulnerability; scan results depend on the current Snyk vulnerability database and the packages available from the
 image's base repositories.

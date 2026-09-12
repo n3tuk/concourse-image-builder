@@ -1,0 +1,37 @@
+---
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+version: 3
+
+set:
+  - pipefail
+
+tasks:
+  hadolint:
+    desc: Lint Dockerfiles with hadolint
+    summary: |-
+      Run hadolint across all Dockerfiles to identify Dockerfile issues, best practices, and security concerns.
+    silent: true
+    cmds:
+      - defer: "echo -e {{ if .EXIT_CODE }}'\e[1;31mFailed\e[0m'{{ else }}'\e[0;32mPassed\e[0m'{{ end }}"
+      - for:
+          var: containers
+          as: container
+        task: hadolint:{{ .container }}
+
+  hadolint:*:
+    label: '{{ trimSuffix ":*" .TASK }}:{{ default "{...}" (index .MATCH 0) }}'
+    prefix: '{{ trimSuffix ":*" .TASK }}:{{ index .MATCH 0 }}'
+    desc: Lint a specific Dockerfile with hadolint for a specific container
+    summary: |-
+      Run hadolint against a specific Dockerfile to identify Dockerfile issues, best practices, and
+      security concerns for a specific container.
+    dir: containers
+    sources:
+      - "{{ index .MATCH 0 }}/Dockerfile"
+    silent: true
+    deps:
+      - task: check:exec:hadolint
+    cmds:
+      - defer: "echo -e {{ if .EXIT_CODE }}'\e[1;31mFailed\e[0m'{{ else }}'\e[0;32mPassed\e[0m'{{ end }}"
+      - cmd: hadolint -c '{{ .ROOT_DIR }}/.hadolint.yaml' '{{ index .MATCH 0 }}/Dockerfile'
