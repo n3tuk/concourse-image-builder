@@ -1,0 +1,60 @@
+---
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+version: 3
+
+tasks:
+  prettier:
+    desc: Run Prettier for all supported files
+    summary: |-
+      Run Prettier for all supported files, including Markdown, YAML, JSON and TOML files, in order to ensure they are
+      correct, structured and that they are consistent in their layout and usage, minimising whitespace changes.
+    sources:
+      - "**/*.md"
+      - "**/*.yml"
+      - "**/*.yaml"
+      - "**/*.json"
+      - "**/*.toml"
+      - .*.md
+      - .*.yml
+      - .*.yaml
+      - .*.json
+      - .*.toml
+      - .*/**/*.md
+      - .*/**/*.yml
+      - .*/**/*.yaml
+      - .*/**/*.json
+      - .*/**/*.toml
+      - .snyk
+      - "{{ .ROOT_DIR }}/.prettierrc.yaml"
+      - "{{ .ROOT_DIR }}/.prettierignore"
+      - "{{ .ROOT_DIR }}/.gitignore"
+      # Ignore the CodeQL cache
+      - exclude: .codeql/**
+      # Ignore local temporary directories and test data
+      - exclude: dist/**
+      - exclude: pipelines/**
+      - exclude: internal/**/testdata/**
+    vars:
+      files:
+        sh: |-
+          ( find . -type f \
+              -not \( -path './.codeql/*' -or -path './dist/*' -or \
+                      -path './pipelines/*' -or -path './internal/*/testdata/*' \) \
+              -and \( -iname '*.md' -or -iname '*.yml' -or -iname '*.yaml' -or -iname '*.json' -or -iname '.snyk' \) \
+              -print 2>/dev/null \
+            | sed 's|^\./||' | paste -sd' ' - ) || echo 'README.md'
+    silent: true
+    deps:
+      - task: check:exec:prettier
+    cmds:
+      - defer: "echo -e {{ if .EXIT_CODE }}'\e[1;31mFailed\e[0m'{{ else }}'\e[0;32mPassed\e[0m'{{ end }}"
+      - cmd: prettier --log-level warn --write --cache --cache-location .prettiercache {{ .files }}
+
+  prettier:clean:
+    desc: Clean the Prettier cache
+    silent: true
+    run: once
+    cmds:
+      - defer: "echo -e {{ if .EXIT_CODE }}'\e[1;31mFailed\e[0m'{{ else }}'\e[0;32mCompleted\e[0m'{{ end }}"
+      - cmd: rm -f .prettiercache

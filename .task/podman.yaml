@@ -1,0 +1,70 @@
+---
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+version: 3
+
+vars:
+  registry: ghcr.io/n3tuk/concourse
+  containers:
+    sh: |-
+      find containers -mindepth 2 -maxdepth 2 -type f -iname 'Dockerfile' -exec dirname {} \; \
+      | sed 's|^containers/||' | paste -sd' ' - || true
+
+tasks:
+  podman:list:
+    desc: List all the container images for this repository.
+    summary: List all the container images for the repository.
+    silent: true
+    cmds:
+      - defer: "echo -e {{ if .EXIT_CODE }}'\e[1;31mFailed\e[0m'{{ else }}'\e[0;32mPassed\e[0m'{{ end }}"
+      - for:
+          var: containers
+          as: container
+        cmd: echo -e "\e[1;37m{{ .repository }}/{{ .container }}\e[0m (containers/{{ .container }}/Dockerfile)"
+
+  podman:build:
+    desc: Build the container images using podman
+    summary: |-
+      Build all the container images for the repository, using podman, to ensure that all dependencies and
+      configurations are properly set up and ready for deployment.
+    silent: true
+    cmds:
+      - defer: "echo -e {{ if .EXIT_CODE }}'\e[1;31mFailed\e[0m'{{ else }}'\e[0;32mPassed\e[0m'{{ end }}"
+      - for:
+          var: containers
+          as: container
+        task: podman:build:{{ .container }}
+
+  podman:build:*:
+    label: '{{ trimSuffix ":*" .TASK }}:{{ default .default (index .MATCH 0) }}'
+    prefix: '{{ trimSuffix ":*" .TASK }}:{{ index .MATCH 0 }}'
+    desc: Build a specific container image using podman
+    summary: |-
+      Build a container image, using podman, for a specific container to ensure that all dependencies and configurations
+      are properly set up and ready for deployment.
+    dir: containers
+    sources:
+      - "{{ index .MATCH 0 }}/Dockerfile"
+      - "{{ index .MATCH 0 }}/assets/*"
+    silent: true
+    deps:
+      - task: check:exec:podman
+      - task: hadolint
+    cmds:
+      - defer: "echo -e {{ if .EXIT_CODE }}'\e[1;31mFailed\e[0m'{{ else }}'\e[0;32mPassed\e[0m'{{ end }}"
+      - cmd: |-
+          podman build --tag '{{ index .MATCH 0 }}:testing' {{ index .MATCH 0 }} \
+            --file Dockerfile --format docker
+
+  podman:clean:
+    desc: Clean up all the container images for this repository.
+    summary: |-
+      Clean up all the container images for the repository to free up disk space and remove any unused or outdated
+      images that may be taking up unnecessary resources.
+    silent: true
+    cmds:
+      - defer: "echo -e {{ if .EXIT_CODE }}'\e[1;31mFailed\e[0m'{{ else }}'\e[0;32mPassed\e[0m'{{ end }}"
+      - for:
+          var: containers
+          as: container
+        cmd: podman rmi '{{ .container }}:testing' --force

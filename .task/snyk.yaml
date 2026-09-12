@@ -1,0 +1,35 @@
+---
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+version: 3
+
+tasks:
+  snyk:
+    desc: Scan container images with Snyk
+    summary: |-
+      Run Snyk Container against each locally-built testing image to identify known vulnerabilities in the image and
+      its application dependencies. Run `task build` first when invoking this task directly.
+    silent: true
+    deps:
+      - task: check:exec:snyk
+    cmds:
+      - defer: "echo -e {{ if .EXIT_CODE }}'\e[1;31mFailed\e[0m'{{ else }}'\e[0;32mPassed\e[0m'{{ end }}"
+      - for:
+          var: containers
+          as: container
+        task: snyk:container:{{ .container }}
+
+  snyk:container:*:
+    label: '{{ trimSuffix ":*" .TASK }}:{{ default "{...}" (index .MATCH 0) }}'
+    prefix: '{{ trimSuffix ":*" .TASK }}:{{ index .MATCH 0 }}'
+    desc: Scan a specific container image with Snyk
+    summary: |-
+      Run Snyk Container against the locally-built testing image for a specific container. Snyk uses its default
+      behaviour and fails when it finds a vulnerability.
+    silent: true
+    deps:
+      - task: check:exec:snyk
+    cmds:
+      - defer: "echo -e {{ if .EXIT_CODE }}'\e[1;31mFailed\e[0m'{{ else }}'\e[0;32mPassed\e[0m'{{ end }}"
+      - cmd: echo "Snyk is scanning '{{ index .MATCH 0 }}:testing'... (this may take a few moments)"
+      - cmd: snyk container test '{{ index .MATCH 0 }}:testing' --file='containers/{{ index .MATCH 0 }}/Dockerfile'
