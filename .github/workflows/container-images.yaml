@@ -1,0 +1,167 @@
+---
+# yaml-language-server: $schema=https://www.schemastore.org/github-workflow.json
+
+name: Container Images
+run-name: >-
+  ${{
+    case(
+      github.event_name == 'push', format('Publish container images for {0}', github.sha),
+      format('Validate container images for {0}', github.event.pull_request.title)
+    )
+  }}
+
+concurrency:
+  group: ${{ github.workflow }}:${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+# No permissions by default
+permissions: {}
+
+defaults:
+  run:
+    # Error handling and pipefail must be explicitly set via the default shell
+    #   https://github.com/actions/runner/issues/353#issuecomment-1067227665
+    shell: bash --noprofile --norc -eo pipefail {0}
+
+jobs:
+  find:
+    name: Find containers
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      matrix: ${{ steps.discover.outputs.matrix }}
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Discover container directories
+        id: discover
+        run: |
+          containers=$(
+            find containers -mindepth 2 -maxdepth 2 -type f -iname Dockerfile -exec dirname {} \; \
+            | sed 's|^containers/||' \
+            | sort -u
+          )
+
+          if [[ -z "${containers}" ]]; then
+            echo >&2 "::error title=No containers found::No Dockerfiles were found under the containers/ directory."
+            exit 1
+          fi
+
+          matrix=$(
+            printf '%s\n' "${containers}" \
+            | jq --raw-input --slurp --compact-output '{container: split("\n") | map(select(length > 0))}'
+          )
+
+          echo "matrix=${matrix}" >> "${GITHUB_OUTPUT}"
+
+  build:
+    name: ${{ github.event_name == 'push' && 'Publish' || 'Build' }} ${{ matrix.container }}
+    needs:
+      - find
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix: ${{ fromJSON(needs.find.outputs.matrix) }}
+      fail-fast: false
+    environment:
+      name: ${{ matrix.container }}
+      deployment: ${{ github.event_name == 'push' }}
+    env:
+      CONTAINER: ${{ matrix.container }}
+      IMAGE_NAME: ghcr.io/n3tuk/concourse/${{ matrix.container }}
+      IMAGE_TAG: sha-${{ github.sha }}
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
+
+      - name: Extract image metadata
+        id: meta
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,format=long,priority=1000
+            type=raw,value=latest,enable={{is_default_branch}}
+          labels: |
+            org.opencontainers.image.title=${{ matrix.container }}
+            org.opencontainers.image.description=Concourse CI image ${{ matrix.container }}
+          annotations: |
+            org.opencontainers.image.title=${{ matrix.container }}
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+
+      - name: Build the image
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        with:
+          context: containers/${{ matrix.container }}
+          file: containers/${{ matrix.container }}/Dockerfile
+          platforms: linux/amd64
+          load: true
+          push: false
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          annotations: ${{ steps.meta.outputs.annotations }}
+
+      - name: Set up Snyk
+        uses: snyk/actions/setup@9adf32b1121593767fc3c057af55b55db032dc04 # v1.0.0
+        with:
+          # TODO: Look into hard-coding of the version used here
+          snyk-version: latest
+
+      - name: Monitor the image with Snyk
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: |-
+          # snyk container monitor {image}:latest
+          snyk container monitor "${IMAGE_NAME}:${IMAGE_TAG}" \
+            --file="containers/$CONTAINER/Dockerfile" \
+            --platform=linux/amd64 \
+            --org=n3tuk \
+            --project-name="${GITHUB_REPOSITORY}/${CONTAINER}" \
+            --target-reference="${GITHUB_SHA}" \
+            --project-environment=internal \
+            --project-lifecycle=sandbox
+
+      - name: Test the image with Snyk
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: |-
+          # snyk container test {image}:latest
+          snyk container test "${IMAGE_NAME}:${IMAGE_TAG}" \
+            --file="containers/$CONTAINER/Dockerfile" \
+            --platform=linux/amd64 \
+            --org=n3tuk
+
+      - name: Log in to GitHub Container Registry
+        if: github.event_name == 'push'
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push the image tags
+        if: github.event_name == 'push'
+        run: |
+          # docker push ...
+          docker push "${IMAGE_NAME}:${IMAGE_TAG}"
+          docker push "${IMAGE_NAME}:latest"

@@ -34,4 +34,4 @@ pull_request_rules:
       - -closed
     actions:
       merge:
-        method: rebase
+        method: merge
