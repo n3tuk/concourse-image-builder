@@ -127,13 +127,21 @@ jobs:
           # TODO: Look into hard-coding of the version used here
           snyk-version: latest
 
+      - name: Configure Snyk
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: |-
+          # snyk config set ...
+          snyk config set disableSuggestions=true
+
       - name: Monitor the image with Snyk
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         run: |-
           # snyk container monitor {image}:latest
+
           snyk container monitor "${IMAGE_NAME}:${IMAGE_TAG}" \
-            --file="containers/$CONTAINER/Dockerfile" \
+            --file="containers/${CONTAINER}/Dockerfile" \
             --platform=linux/amd64 \
             --org=n3tuk \
             --project-name="${GITHUB_REPOSITORY}/${CONTAINER}" \
@@ -146,10 +154,17 @@ jobs:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         run: |-
           # snyk container test {image}:latest
+          declare -a ARGS
+          if test -f "containers/${CONTAINER}/.snyk"; then
+            ARGS+=(--policy-path "containers/${CONTAINER}/.snyk")
+          fi
+
           snyk container test "${IMAGE_NAME}:${IMAGE_TAG}" \
             --file="containers/$CONTAINER/Dockerfile" \
             --platform=linux/amd64 \
-            --org=n3tuk
+            --org=n3tuk \
+            "${ARGS[@]}" --trust-policies \
+            --severity-threshold=medium
 
       - name: Log in to GitHub Container Registry
         if: github.event_name == 'push'
