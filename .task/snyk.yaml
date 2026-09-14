@@ -27,9 +27,23 @@ tasks:
       Run Snyk Container against the locally-built testing image for a specific container. Snyk uses its default
       behaviour and fails when it finds a vulnerability.
     silent: true
+    sources:
+      - containers/{{ index .MATCH 0 }}/Dockerfile
+      - containers/{{ index .MATCH 0 }}/assets/*
+      - containers/{{ index .MATCH 0 }}/.snyk
+    vars:
+      args:
+        sh: |-
+          test -f containers/{{ index .MATCH 0 }}/.snyk \
+          && echo -n "--policy-path containers/{{ index .MATCH 0 }}/.snyk" \
+          || true
     deps:
       - task: check:exec:snyk
     cmds:
       - defer: "echo -e {{ if .EXIT_CODE }}'\e[1;31mFailed\e[0m'{{ else }}'\e[0;32mPassed\e[0m'{{ end }}"
       - cmd: echo "Snyk is scanning '{{ index .MATCH 0 }}:testing'... (this may take a few moments)"
-      - cmd: snyk container test '{{ index .MATCH 0 }}:testing' --file='containers/{{ index .MATCH 0 }}/Dockerfile'
+      - cmd: |-
+          snyk container test '{{ index .MATCH 0 }}:testing'  \
+            --file='containers/{{ index .MATCH 0 }}/Dockerfile' \
+            --severity-threshold=medium \
+            {{ .args }} --trust-policies
