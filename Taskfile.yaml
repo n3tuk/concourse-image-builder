@@ -25,6 +25,15 @@ includes:
   yamllint:
     taskfile: .task/yamllint.yaml
     flatten: true
+  shellcheck:
+    taskfile: .task/shellcheck.yaml
+    flatten: true
+  shfmt:
+    taskfile: .task/shfmt.yaml
+    flatten: true
+  bats:
+    taskfile: .task/bats.yaml
+    flatten: true
   podman:
     taskfile: .task/podman.yaml
     flatten: true
@@ -94,6 +103,7 @@ tasks:
       - task: markdownlint
       - task: yamllint
       - task: hadolint
+      - task: shfmt
 
   build:
     desc: Build the container images locally
@@ -103,6 +113,19 @@ tasks:
       - defer: "echo -e {{ if .EXIT_CODE }}'\e[1;31mFailed\e[0m'{{ else }}'\e[0;32mCompleted\e[0m'{{ end }}"
       - task: podman:build
 
+  test:
+    aliases:
+      - t
+    desc: Run unit and integration tests
+    summary: |-
+      Run the unit and integration tests for the local scripts to ensure that they are working as expected and to
+      identify any potential issues using BATS.
+    silent: true
+    cmds:
+      - defer: "{{ if .EXIT_CODE }}echo -e '\e[1;31mFailed\e[0m'{{ end }}"
+      - task: bats
+      - cmd: echo -e '\e[0;32mCompleted\e[0m'
+
   analyse:
     desc: Run static code analysis and security analysis tools
     summary: >-
@@ -111,6 +134,7 @@ tasks:
     silent: true
     cmds:
       - defer: "echo -e {{ if .EXIT_CODE }}'\e[1;31mFailed\e[0m'{{ else }}'\e[0;32mCompleted\e[0m'{{ end }}"
+      - task: shellcheck
       - task: check-jsonschema
       - task: actionlint
       - task: zizmor

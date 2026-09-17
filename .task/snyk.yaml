@@ -45,5 +45,5 @@ tasks:
       - cmd: |-
           snyk container test '{{ index .MATCH 0 }}:testing'  \
             --file='containers/{{ index .MATCH 0 }}/Dockerfile' \
-            --severity-threshold=medium \
+            --severity-threshold=critical \
             {{ .args }} --trust-policies

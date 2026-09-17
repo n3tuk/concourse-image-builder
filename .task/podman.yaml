@@ -42,7 +42,6 @@ tasks:
     summary: |-
       Build a container image, using podman, for a specific container to ensure that all dependencies and configurations
       are properly set up and ready for deployment.
-    dir: containers
     sources:
       - "{{ index .MATCH 0 }}/Dockerfile"
       - "{{ index .MATCH 0 }}/assets/*"
@@ -52,9 +51,7 @@ tasks:
       - task: hadolint
     cmds:
       - defer: "echo -e {{ if .EXIT_CODE }}'\e[1;31mFailed\e[0m'{{ else }}'\e[0;32mPassed\e[0m'{{ end }}"
-      - cmd: |-
-          podman build --tag '{{ index .MATCH 0 }}:testing' {{ index .MATCH 0 }} \
-            --file Dockerfile --format docker
+      - cmd: podman build --tag '{{ index .MATCH 0 }}:testing' --file containers/{{ index .MATCH 0 }}/Dockerfile .
 
   podman:clean:
     desc: Clean up all the container images for this repository.
