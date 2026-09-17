@@ -13,25 +13,6 @@ coverage.html
 coverage.out
 coverage/
 
-# Ignore goreleaser processing directories
-bin/
-dist/
-
-# Ignore the default output directory for locally-generated pipelines
-pipelines/
-
-# Ignore CodeQL processing directory
-.codeql/
-
-# Compiled Object files, Static and Dynamic libs (Shared Objects)
-*.o
-*.a
-*.so
-
-# Folders
-_obj
-_test
-
 # Architecture specific extensions/prefixes
 *.[568vq]
 [568vq].out

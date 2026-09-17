@@ -43,8 +43,9 @@ tasks:
       Build a container image, using podman, for a specific container to ensure that all dependencies and configurations
       are properly set up and ready for deployment.
     sources:
-      - "{{ index .MATCH 0 }}/Dockerfile"
-      - "{{ index .MATCH 0 }}/assets/*"
+      - containers/{{ index .MATCH 0 }}/Dockerfile
+      - containers/{{ index .MATCH 0 }}/assets/*
+      - common/assets/*
     silent: true
     deps:
       - task: check:exec:podman

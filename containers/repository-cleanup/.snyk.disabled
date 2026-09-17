@@ -1,25 +1,24 @@
 # Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities.
 version: v1.25.1
 # ignores vulnerabilities until expiry date; change duration by modifying expiry date
-ignore:
-  SNYK-DEBIAN13-ACL-17677882:
-    - "*":
-        reason: Vulnerability currently has no fix.
-        expires: 2026-10-14T20:20:44.554Z
-        created: 2026-09-14T20:20:44.557Z
-  SNYK-DEBIAN13-ZLIB-19520500:
-    - "*":
-        reason: Vulnerability currently has no fix.
-        expires: 2026-10-14T20:22:28.587Z
-        created: 2026-09-14T20:22:28.593Z
-  SNYK-DEBIAN13-ATTR-17678182:
-    - "*":
-        reason: Vulnerability currently has no fix.
-        expires: 2026-10-14T20:22:53.755Z
-        created: 2026-09-14T20:22:53.761Z
-  SNYK-DEBIAN13-ACL-17677866:
-    - "*":
-        reason: Vulnerability currently has no fix.
-        expires: 2026-10-14T20:23:09.176Z
-        created: 2026-09-14T20:23:09.183Z
-patch: {}
+ignore: {}
+  # SNYK-DEBIAN13-ACL-17677882:
+  #   - "*":
+  #       reason: Vulnerability currently has no fix.
+  #       expires: 2026-10-14T20:20:44.554Z
+  #       created: 2026-09-14T20:20:44.557Z
+  # SNYK-DEBIAN13-ZLIB-19520500:
+  #   - "*":
+  #       reason: Vulnerability currently has no fix.
+  #       expires: 2026-10-14T20:22:28.587Z
+  #       created: 2026-09-14T20:22:28.593Z
+  # SNYK-DEBIAN13-ATTR-17678182:
+  #   - "*":
+  #       reason: Vulnerability currently has no fix.
+  #       expires: 2026-10-14T20:22:53.755Z
+  #       created: 2026-09-14T20:22:53.761Z
+  # SNYK-DEBIAN13-ACL-17677866:
+  #   - "*":
+  #       reason: Vulnerability currently has no fix.
+  #       expires: 2026-10-14T20:23:09.176Z
+  #       created: 2026-09-14T20:23:09.183Z

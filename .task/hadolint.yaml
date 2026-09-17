@@ -26,9 +26,8 @@ tasks:
     summary: |-
       Run hadolint against a specific Dockerfile to identify Dockerfile issues, best practices, and
       security concerns for a specific container.
-    dir: containers
     sources:
-      - "{{ index .MATCH 0 }}/Dockerfile"
+      - containers/{{ index .MATCH 0 }}/Dockerfile
     silent: true
     deps:
       - task: check:exec:hadolint
