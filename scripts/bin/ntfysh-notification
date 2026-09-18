@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+# vim:set ft=bash:
+
+set -euo pipefail
+
+exec 3>&1 # make stdout available as fd 3 for the result
+exec 1>&2 # redirect all output to stderr for logging
+
+LIB_DIR=$(realpath "$(dirname "${0}")/../lib")
+export LIB_DIR
+
+# shellcheck source=../lib/common.sh
+source "${LIB_DIR}/common.sh"
+# shellcheck source=../lib/ntfysh.sh
+source "${LIB_DIR}/ntfysh.sh"
+
+cd "${1}"
+
+payload=$(cat <&0)
+timestamp=$(jq --null-input --arg "timestamp" "$(date +%s)" '{version:{timestamp:$timestamp}}')
+
+disable="$(jq --raw-output '.source.disable' <<< "${payload}")"
+if [[ ${disable} == "true" ]]; then
+    echo "${timestamp}" >&3
+    exit 0
+fi
+
+# webhook_url=$(   jq --raw-output '.source.url'                 <<< "${payload}")
+# allow_insecure=$(jq --raw-output '.source.insecure // "false"' <<< "${payload}")
+# raw_ca_certs=$(  jq              '.source.ca_certs // []'      <<< "${payload}")
+#
+# text_file=$( jq --raw-output '.params.text_file  // ""'                     <<< "${payload}")
+# text=$(      jq --raw-output '.params.text       // "${TEXT_FILE_CONTENT}"' <<< "${payload}")
+# username=$(  jq --raw-output '.params.username   // null'                   <<< "${payload}")
+# icon_url=$(  jq --raw-output '.params.icon_url   // null'                   <<< "${payload}")
+# icon_emoji=$(jq --raw-output '.params.icon_emoji // null'                   <<< "${payload}")
+# link_names=$(jq --raw-output '.params.link_names // false'                  <<< "${payload}")
+#
+# channels=$(        jq --raw-output '.params.channel          // null' <<< "${payload}")
+# channel_file=$(    jq --raw-output '.params.channel_file     // null' <<< "${payload}")
+# attachments_file=$(jq --raw-output '.params.attachments_file // ""'   <<< "${payload}")
+# attachments=$(     jq --raw-output '.params.attachments      // null' <<< "${payload}")
+#
+# debug=$(        jq --raw-output '.params.debug               // "false"' <<< "${payload}")
+# show_metadata=$(jq --raw-output '.params.metadata            // "false"' <<< "${payload}")
+# show_payload=$( jq --raw-output '.params.payload_in_metadata // "false"' <<< "${payload}")
+# silent=$(       jq --raw-output '.params.silent              // "false"' <<< "${payload}")
+# always_notify=$(jq --raw-output '.params.always_notify       // "false"' <<< "${payload}")
+# redact_hook=$(  jq --raw-output '.params.redact_hook_url     // "true"'  <<< "${payload}")
+#
+# proxy=$(             jq --raw-output '.source.proxy              // "null"'  <<< "${payload}")
+# proxy_https_tunnel=$(jq --raw-output '.source.proxy_https_tunnel // "false"' <<< "${payload}")
+#
+# # Read the env_file and export it in the current console
+# env_file=$(jq --raw-output '.params.env_file // ""' <<< "${payload}")

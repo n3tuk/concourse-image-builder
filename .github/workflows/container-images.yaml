@@ -112,7 +112,7 @@ jobs:
       - name: Build the image
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
-          context: containers/${{ matrix.container }}
+          context: .
           file: containers/${{ matrix.container }}/Dockerfile
           platforms: linux/amd64
           load: true
@@ -127,29 +127,42 @@ jobs:
           # TODO: Look into hard-coding of the version used here
           snyk-version: latest
 
+      - name: Configure Snyk
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: |-
+          # snyk config set ...
+          snyk config set disableSuggestions=true
+
       - name: Monitor the image with Snyk
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         run: |-
           # snyk container monitor {image}:latest
+
           snyk container monitor "${IMAGE_NAME}:${IMAGE_TAG}" \
-            --file="containers/$CONTAINER/Dockerfile" \
-            --platform=linux/amd64 \
-            --org=n3tuk \
-            --project-name="${GITHUB_REPOSITORY}/${CONTAINER}" \
-            --target-reference="${GITHUB_SHA}" \
+            --org=n3tuk --project-name="${GITHUB_REPOSITORY}/${CONTAINER}" \
+            --target-reference="main" \
             --project-environment=internal \
-            --project-lifecycle=sandbox
+            --project-lifecycle=sandbox \
+            --file="containers/${CONTAINER}/Dockerfile"
 
       - name: Test the image with Snyk
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         run: |-
           # snyk container test {image}:latest
+
+          declare -a ARGS
+          if test -f "containers/${CONTAINER}/.snyk"; then
+            ARGS+=(--policy-path "containers/${CONTAINER}/.snyk")
+          fi
+
           snyk container test "${IMAGE_NAME}:${IMAGE_TAG}" \
-            --file="containers/$CONTAINER/Dockerfile" \
-            --platform=linux/amd64 \
-            --org=n3tuk
+            --org=n3tuk --project-name="${GITHUB_REPOSITORY}/${CONTAINER}" \
+            --target-reference="${GITHUB_SHA}" --severity-threshold=critical \
+            --file="containers/$CONTAINER/Dockerfile" --platform=linux/amd64 \
+            "${ARGS[@]}" --trust-policies
 
       - name: Log in to GitHub Container Registry
         if: github.event_name == 'push'

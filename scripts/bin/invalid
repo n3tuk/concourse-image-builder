@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# vim:set ft=bash:
+
+set -euo pipefail
+
+exec 3>&1 # make stdout available as fd 3 for the result
+exec 1>&2 # redirect all output to stderr for logging
+
+LIB_DIR=$(realpath "$(dirname "${0}")/../lib")
+TMPL_DIR=$(realpath "$(dirname "${0}")/../templates")
+export LIB_DIR TMPL_DIR
+
+# shellcheck source=../lib/common.sh
+source "${LIB_DIR}/common.sh"
+
+payload=$(cat <&0)
+timestamp=$(jq --raw-output '.version.timestamp // empty' <<< "${payload}")
+
+if [[ -z "${timestamp}" ]]; then
+    echo '[]' >&3
+else
+    jq --null-input \
+        --arg "timestamp" "${timestamp}" \
+        '[ { timestamp: $timestamp } ]' \
+        >&

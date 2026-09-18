@@ -1,32 +1,7 @@
 ---
 # yaml-language-server: $schema=https://raw.githubusercontent.com/hadolint/hadolint/master/contrib/hadolint.json
 
-# Hadolint rules and configuration
-# See: https://github.com/hadolint/hadolint/wiki/Rules
-
-rules:
-  # Set the severity level for each rule
-  # For our Arch Linux builder, we're being explicit about best practices
-  DL3008: # Pin versions in apt/apk/yum/pacman
-    level: warning
-  DL3009: # Delete apt/yum/apk cache in the same layer
-    level: warning
-  DL3015: # Avoid apt-get upgrade or apt-get dist-upgrade
-    level: warning
-  DL3018: # Pin versions in apk add (avoids mutable package versions)
-    level: warning
-  DL3019: # Use the --no-cache flag to slim down the image
-    level: warning
-  DL3020: # Use COPY instead of ADD for files and folders
-    level: error
-  DL3028: # Pin versions in official Debian and Ubuntu base image tags when not explicitly pinned
-    level: warning
-  DL4000: # MAINTAINER is deprecated
-    level: warning
-  DL4001: # Either use Wget or Curl more explicitly with -O/-o
-    level: style
-  DL4006: # Set the SHELL flag with -o pipefail before RUN with a pipe in it
-    level: error
-
-# Ignored rules (if any become necessary to disable)
-ignored: []
+ignored:
+  - DL3009 # info: Delete the apt lists (/var/lib/apt/lists) after installing something
+  - DL3008 # warning: Pin versions in apt get install. Use `apt-get install <package>=<version>`
+  - DL4006 # warning: Set the SHELL option -o pipefail before RUN with a pipe in it.
