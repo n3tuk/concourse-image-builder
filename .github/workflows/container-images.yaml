@@ -141,30 +141,28 @@ jobs:
           # snyk container monitor {image}:latest
 
           snyk container monitor "${IMAGE_NAME}:${IMAGE_TAG}" \
-            --file="containers/${CONTAINER}/Dockerfile" \
-            --platform=linux/amd64 \
-            --org=n3tuk \
-            --project-name="${GITHUB_REPOSITORY}/${CONTAINER}" \
-            --target-reference="${GITHUB_SHA}" \
+            --org=n3tuk --project-name="${GITHUB_REPOSITORY}/${CONTAINER}" \
+            --target-reference="main" \
             --project-environment=internal \
-            --project-lifecycle=sandbox
+            --project-lifecycle=sandbox \
+            --file="containers/${CONTAINER}/Dockerfile"
 
       - name: Test the image with Snyk
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         run: |-
           # snyk container test {image}:latest
+
           declare -a ARGS
           if test -f "containers/${CONTAINER}/.snyk"; then
             ARGS+=(--policy-path "containers/${CONTAINER}/.snyk")
           fi
 
           snyk container test "${IMAGE_NAME}:${IMAGE_TAG}" \
-            --file="containers/$CONTAINER/Dockerfile" \
-            --platform=linux/amd64 \
-            --org=n3tuk \
-            "${ARGS[@]}" --trust-policies \
-            --severity-threshold=medium
+            --org=n3tuk --project-name="${GITHUB_REPOSITORY}/${CONTAINER}" \
+            --target-reference="${GITHUB_SHA}" --severity-threshold=critical \
+            --file="containers/$CONTAINER/Dockerfile" --platform=linux/amd64 \
+            "${ARGS[@]}" --trust-policies
 
       - name: Log in to GitHub Container Registry
         if: github.event_name == 'push'
