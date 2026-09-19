@@ -33,4 +33,4 @@ tasks:
       - task: check:exec:hadolint
     cmds:
       - defer: "echo -e {{ if .EXIT_CODE }}'\e[1;31mFailed\e[0m'{{ else }}'\e[0;32mPassed\e[0m'{{ end }}"
-      - cmd: hadolint -c '{{ .ROOT_DIR }}/.hadolint.yaml' '{{ index .MATCH 0 }}/Dockerfile'
+      - cmd: hadolint -c '{{ .ROOT_DIR }}/.hadolint.yaml' 'containers/{{ index .MATCH 0 }}/Dockerfile'
