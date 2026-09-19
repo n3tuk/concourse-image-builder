@@ -46,6 +46,9 @@ tasks:
       - containers/{{ index .MATCH 0 }}/Dockerfile
       - containers/{{ index .MATCH 0 }}/assets/*
       - common/assets/*
+      - scripts/bin/{{ index .MATCH 0 }}
+      - scripts/bin/{{ index .MATCH 0 }}-*
+      - scripts/lib/*.sh
     silent: true
     deps:
       - task: check:exec:podman

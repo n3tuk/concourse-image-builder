@@ -18,7 +18,7 @@ source "${LIB_DIR}/database.sh"
 
 log:info "Initiating Arch Linux repository database retrival"
 
-check:commands jq
+check:commands aws jq logger mktemp tar uuidgen
 
 # If this source is disabled, return an empty array to indicate no versions
 if [[ "$(payload:source disable false)" == "true" ]]; then
