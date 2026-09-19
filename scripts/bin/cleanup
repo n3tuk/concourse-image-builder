@@ -15,6 +15,14 @@ source "${LIB_DIR}/cleanup.sh"
 
 log:info "Initiating Arch Linux repository cleanup"
 
+check:commands aws jq logger mktemp uuidgen
+
+# If this source is disabled, return an empty array to indicate no versions
+if [[ "$(payload:source disable false)" == "true" ]]; then
+  echo "[]" >&3
+  exit 0
+fi
+
 check:variables ENDPOINT REGION BUCKET PREFIX REPOSITORY
 check:variables ACCESS_KEY_ID:sensitive SECRET_ACCESS_KEY:sensitive
 

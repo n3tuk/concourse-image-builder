@@ -17,7 +17,7 @@ function payload:version {
   local key="${1}"
 
   value=$(jq --raw-output ".version.${key}" <<<"${payload}")
-  if [[ -z ${value} || "${value}" == "null" ]]; then
+  if [[ -z ${value} || ${value} == "null" ]]; then
     log:fatal "Missing required version identifier" version="${key}" exists="false"
   fi
 
