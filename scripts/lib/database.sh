@@ -52,8 +52,8 @@ function database:etag {
   fi
 
   metadata=$(aws s3api "${arguments[@]}" 2>/dev/null || echo "{}")
-  modified=$(jq --raw-output '.LastModified // "none"' <<<"${metadata}")
-  etag=$(jq --raw-output '.ETag // "none"' <<<"${metadata}" | tr -d '"')
+  modified=$(jq --raw-output '.LastModified // "none"' <<<"${metadata}" 2>/dev/null)
+  etag=$(jq --raw-output '.ETag // "none"' <<<"${metadata}" 2>/dev/null | tr -d '"')
 
   log:debug "Retrieved repository metadata" "modified=${modified}" "etag=${etag}"
   echo "${etag}"
@@ -75,10 +75,11 @@ function database:retrieve {
 }
 
 function database:extract {
-  local repository="${1}"
+  local resource="${1}" repository="${2}"
 
-  log:debug "Extracting repository database" \
-    repository="${repository}"
+  log:debug "Extracting repository database" resource=repository-database repository="${repository}"
 
-  tar xzf "${repository}.db.tar.gz"
+  test -f "${resource}/${repository}.db.tar.gz"
+  mkdir -p "${resource}/db"
+  tar xzf "${resource}/${repository}.db.tar.gz" -C "${resource}/db"
 }

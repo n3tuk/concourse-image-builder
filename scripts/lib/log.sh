@@ -60,7 +60,7 @@ function log:info() {
   log:fmt "info" "${msg}" "${@}"
 }
 
-function log:warn() {
+function log:warning() {
   local msg="${1}"
   shift
   log:fmt "warning" "${msg}" "${@}"

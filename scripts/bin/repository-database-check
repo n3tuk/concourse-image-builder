@@ -26,12 +26,6 @@ if [[ "$(payload:source disable false)" == "true" ]]; then
   exit 0
 fi
 
-if test -z "${1:-}"; then
-  log:fatal "Missing working directory argument"
-fi
-
-cd "${1}"
-
 region=$(payload:region)
 endpoint=$(payload:endpoint)
 bucket=$(payload:bucket)
@@ -55,4 +49,4 @@ log:info "Repository database checked" bucket="${bucket}" repository="${prefix}/
 # Output a version with the entity tag of the database file to indicate the current version of the repository database,
 # and trigger a run if a new tag for the database is available (which usually means there are packages to clean up). By
 # only returning the current tag, we let Concourse decide when a new version has been retrieved and processed.
-jq --monochrome-output --compact-output --null-input --arg "etag" "${etag}" '[{version:{etag:$etag}}]' >&3
+jq --monochrome-output --compact-output --null-input --arg "etag" "${etag}" '[{etag:$etag}]' >&3
