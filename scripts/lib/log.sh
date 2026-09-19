@@ -8,7 +8,7 @@ red=""
 white=""
 reset=""
 
-if command -v tput >/dev/null 2>&1 && [[ -t 2 ]] && [[ -n ${TERM:-} && ${TERM} != "dumb" ]] && [[ -z ${NO_COLOR:-} ]]; then
+if command -v tput >/dev/null 2>&1 && [[ -z ${NO_COLOR:-} ]]; then
   blue=$(tput setaf 4 2>/dev/null || true)
   green=$(tput setaf 2 2>/dev/null || true)
   yellow=$(tput setaf 3 2>/dev/null || true)
