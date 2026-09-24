@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # vim:set ft=bash:
 
-DEBUG=${DEBUG:-}
 LIB_DIR=${LIB_DIR:-../lib}
 
 # shellcheck source=../lib/check.sh

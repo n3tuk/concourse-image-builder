@@ -8,14 +8,17 @@ red=""
 white=""
 reset=""
 
-if command -v tput >/dev/null 2>&1 && [[ -z ${NO_COLOR:-} ]]; then
-  blue=$(tput setaf 4 2>/dev/null || true)
-  green=$(tput setaf 2 2>/dev/null || true)
-  yellow=$(tput setaf 3 2>/dev/null || true)
-  red=$(tput setaf 1 2>/dev/null || true)
-  white=$(tput bold setaf 7 2>/dev/null || true)
-  reset=$(tput sgr0 2>/dev/null || true)
-fi
+case "${NO_COLOR:-}" in
+  1 | true | TRUE | yes | YES | on | ON) ;;
+  *)
+    blue="\e[34m"
+    green="\e[32m"
+    yellow="\e[33m"
+    red="\e[31m"
+    white="\e[1;37m"
+    reset="\e[0m"
+    ;;
+esac
 
 function log:fmt() {
   local level="${1}" msgid msg
@@ -23,23 +26,16 @@ function log:fmt() {
 
   if [[ -z ${level} ]]; then
     log:fatal "Missing required log level"
-  elif [[ ${level} == "debug" ]]; then
-    case "${DEBUG:-}" in
-      1 | true | TRUE | yes | YES | on | ON) : ;;
-      *) return 0 ;;
-    esac
   fi
 
   declare -a arguments=("--sd-param" "level=\"${level}\"")
   declare -a parameters=()
 
-  local time_color="${green}"
   local level_color="${reset}"
   local key_color="${blue}"
   local msg_color="${white}"
   case "${level}" in
     debug)
-      time_color="${reset}"
       key_color="${reset}"
       msg_color="${reset}"
       ;;
@@ -48,8 +44,8 @@ function log:fmt() {
     err | crit) level_color="${red}" ;;
   esac
 
-  printf "${key_color}time${reset}=${time_color}%s${reset} ${key_color}level${reset}=${level_color}%s${reset}" \
-    "$(date -u +"%Y-%m-%dT%H:%M:%S.%NZ")" "${level}" >&2
+  printf "${blue}time${reset}=${green}%s${reset} ${blue}level${reset}=${level_color}%s${reset}" \
+    "$(date -u +"%Y-%m-%dT%H:%M:%S.%3NZ")" "${level}" >&2
 
   for parameter in "${@}"; do
     test -z "${parameter}" && continue
@@ -79,7 +75,7 @@ function log:fmt() {
     fi
   fi
 
-  printf ' %s' "${parameters[@]}" >&2
+  printf ' %b' "${parameters[@]}" >&2
   echo >&2
 
   msgid=$(uuidgen --time-v7)
