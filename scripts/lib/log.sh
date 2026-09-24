@@ -26,23 +26,16 @@ function log:fmt() {
 
   if [[ -z ${level} ]]; then
     log:fatal "Missing required log level"
-  elif [[ ${level} == "debug" ]]; then
-    case "${DEBUG:-}" in
-      1 | true | TRUE | yes | YES | on | ON) : ;;
-      *) return 0 ;;
-    esac
   fi
 
   declare -a arguments=("--sd-param" "level=\"${level}\"")
   declare -a parameters=()
 
-  local time_color="${green}"
   local level_color="${reset}"
   local key_color="${blue}"
   local msg_color="${white}"
   case "${level}" in
     debug)
-      time_color="${reset}"
       key_color="${reset}"
       msg_color="${reset}"
       ;;
@@ -51,8 +44,8 @@ function log:fmt() {
     err | crit) level_color="${red}" ;;
   esac
 
-  printf "${key_color}time${reset}=${time_color}%s${reset} ${key_color}level${reset}=${level_color}%s${reset}" \
-    "$(date -u +"%Y-%m-%dT%H:%M:%S.%NZ")" "${level}" >&2
+  printf "${blue}time${reset}=${green}%s${reset} ${blue}level${reset}=${level_color}%s${reset}" \
+    "$(date -u +"%Y-%m-%dT%H:%M:%S.%3NZ")" "${level}" >&2
 
   for parameter in "${@}"; do
     test -z "${parameter}" && continue

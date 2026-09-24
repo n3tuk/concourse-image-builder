@@ -53,6 +53,7 @@ tasks:
     deps:
       - task: check:exec:podman
       - task: hadolint
+      - task: shellcheck
     cmds:
       - defer: "echo -e {{ if .EXIT_CODE }}'\e[1;31mFailed\e[0m'{{ else }}'\e[0;32mPassed\e[0m'{{ end }}"
       - cmd: podman build --tag '{{ index .MATCH 0 }}:testing' --file containers/{{ index .MATCH 0 }}/Dockerfile .

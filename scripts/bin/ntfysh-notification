@@ -11,24 +11,66 @@ export LIB_DIR
 
 # shellcheck source=../lib/common.sh
 source "${LIB_DIR}/common.sh"
+# shellcheck source=../lib/payload.sh
+source "${LIB_DIR}/payload.sh"
 # shellcheck source=../lib/ntfysh.sh
 source "${LIB_DIR}/ntfysh.sh"
 
-log:info "Initiating Arch Linux repository cleanup"
+log:info "Initiating ntfy.sh notification output"
 
-check:commands aws jq logger mktemp uuidgen
-
-check:variables ENDPOINT REGION BUCKET PREFIX REPOSITORY
-check:variables ACCESS_KEY_ID:sensitive SECRET_ACCESS_KEY:sensitive
+check:commands jq logger mktemp uuidgen
 
 # If this source is disabled, return an empty array to indicate no versions
-if [[ "$(payload:source disable false)" == "true" ]]; then
-  echo "[]" >&3
+if [[ "$(payload:source disable false false)" == "true" ]]; then
+  echo "{}" >&3
   exit 0
 fi
+
+endpoint=$(payload:source endpoint true "https://ntfy.sh")
+topic=$(payload:source topic true)
+
+type=$(payload:params type false)
+priority=$(payload:params priority true low)
+title=$(payload:params title false)
+message=$(payload:params message false)
 
 if test -z "${1:-}"; then
   log:fatal "Missing working directory argument"
 fi
 
 cd "${1}"
+
+case "${type:-custom}" in
+  repository-cleanup-success)
+    message=$(ntfysh:message:cleanup:success)
+    title=${title:-"Repository Cleanup Completed"}
+    priority=${priority:-"low"}
+    ;;
+  repository-cleanup-failure)
+    message=$(ntfysh:message:cleanup:failure)
+    title=${title:-"Repository Cleanup Failed"}
+    priority=${priority:-"high"}
+    ;;
+  custom)
+    if test -z "${title}"; then
+      log:fatal "Missing title for custom notification" type="custom"
+    elif test -z "${message}"; then
+      log:fatal "Missing message for custom notification" type="custom"
+    fi
+    ;;
+  *)
+    log:fatal "Unknown message type requested" type="${type}"
+    ;;
+esac
+
+case "${priority}" in
+  low|default|normal|high|urgent) ;;
+  *) log:fatal "Invalid priority requested for notification" priority="${priority}" ;;
+esac
+
+sequence=$(uuidgen -r)
+ntfysh:send "${endpoint}/${topic}" "${sequence}" "${priority}" "${title}" "${message}"
+
+jq --monochrome-output --compact-output --null-input \
+  --arg "sequence" "${sequence}" --arg "type" "${type:-custom}" --arg "priority" "${priority}" \
+  '{"version":{"sequence":$sequence},"metadata":[{"name":"type","value":$type},{"name":"priority","value":$priority}]}' >&3
