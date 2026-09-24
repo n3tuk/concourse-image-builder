@@ -8,14 +8,17 @@ red=""
 white=""
 reset=""
 
-if command -v tput >/dev/null 2>&1 && [[ -z ${NO_COLOR:-} ]]; then
-  blue=$(tput setaf 4 2>/dev/null || true)
-  green=$(tput setaf 2 2>/dev/null || true)
-  yellow=$(tput setaf 3 2>/dev/null || true)
-  red=$(tput setaf 1 2>/dev/null || true)
-  white=$(tput bold setaf 7 2>/dev/null || true)
-  reset=$(tput sgr0 2>/dev/null || true)
-fi
+case "${NO_COLOR:-}" in
+  1 | true | TRUE | yes | YES | on | ON) ;;
+  *)
+    blue="\e[34m"
+    green="\e[32m"
+    yellow="\e[33m"
+    red="\e[31m"
+    white="\e[1;37m"
+    reset="\e[0m"
+    ;;
+esac
 
 function log:fmt() {
   local level="${1}" msgid msg
@@ -79,7 +82,7 @@ function log:fmt() {
     fi
   fi
 
-  printf ' %s' "${parameters[@]}" >&2
+  printf ' %b' "${parameters[@]}" >&2
   echo >&2
 
   msgid=$(uuidgen --time-v7)
